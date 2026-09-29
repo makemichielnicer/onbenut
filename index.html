@@ -83,8 +83,23 @@
  #accountModal .form-grid label{grid-column:auto!important}
 }
 </style>
+
+<style>
+.auth-switch{display:flex;gap:8px;margin-bottom:18px}
+.auth-switch button{flex:1;border:1px solid var(--line);background:#fff;border-radius:10px;padding:11px;font-weight:850}
+.auth-switch button.active{background:var(--green);border-color:var(--green);color:#fff}
+.auth-message{display:none;margin:12px 0 0;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.45}
+.auth-message.show{display:block}
+.auth-message.ok{background:#e8f6ef;border:1px solid #b9dfcc;color:#07583F}
+.auth-message.err{background:#fff0f5;border:1px solid #ffc5dc;color:#7a2449}
+.auth-form label{display:grid;gap:7px;font-weight:800}
+.auth-form input{width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff}
+.auth-note{font-size:13px;color:var(--muted);line-height:1.5}
+.auth-userbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;padding:12px 14px;background:#fff;border:1px solid var(--line);border-radius:12px}
+</style>
+
 </head><body>
-<header><div class="wrap"><a class="brand" href="#top"><span class="mark"></span>ONBENUT</a><nav><a href="#aanbod">Aanbod</a><a href="#zoekopdrachten">Zoekopdrachten</a><a href="#categorieen">Categorieën</a><a href="#hoe">Hoe werkt het?</a><a href="#bedrijven">Voor bedrijven</a></nav><div class="head-actions"><button class="btn" onclick="openAccount()">Mijn ONBENUT</button><button class="btn" onclick="openWant()">Ik zoek iets</button><button class="btn primary" onclick="openOffer()">Gratis aanbieden</button></div></div></header>
+<header><div class="wrap"><a class="brand" href="#top"><span class="mark"></span>ONBENUT</a><nav><a href="#aanbod">Aanbod</a><a href="#zoekopdrachten">Zoekopdrachten</a><a href="#categorieen">Categorieën</a><a href="#hoe">Hoe werkt het?</a><a href="#bedrijven">Voor bedrijven</a></nav><div class="head-actions"><button class="btn" id="accountButton" onclick="handleAccountButton()">Inloggen</button><button class="btn" onclick="openWant()">Ik zoek iets</button><button class="btn primary" onclick="openOffer()">Gratis aanbieden</button></div></div></header>
 <main id="top"><div class="hero"><div class="hero-ring" aria-hidden="true"></div><div class="wrap"><div class="hero-copy"><div class="eyebrow">BELGISCHE B2B MARKTPLAATS</div><h1>BENUT WAT <span>STILSTAAT.</span></h1><p>Laat ongebruikte bedrijfsruimte, machines, materiaal, voorraad en vrije capaciteit weer opbrengen.</p><div class="hero-actions"><button class="btn primary" onclick="openOffer()">Ik wil iets aanbieden</button><button class="btn outline" onclick="openWant()">Ik zoek iets</button></div></div></div></div>
 <div class="wrap"><div class="searchbox"><input id="q" class="field" placeholder="Wat zoek je? bv. heftruck, magazijn, CNC…"><select id="cat" class="field"><option value="">Alle categorieën</option><option>Ruimte</option><option>Machines & materiaal</option><option>Voorraad & restpartijen</option><option>Vrije capaciteit</option></select><input id="place" class="field" placeholder="Plaats of regio"><button class="btn green" onclick="filterListings()">Zoeken</button></div></div>
 <section id="categorieen"><div class="wrap"><div class="section-head"><div><h2>Wat staat er stil?</h2><p>Vier manieren om onbenutte middelen opnieuw waarde te geven.</p></div></div><div class="cats"><div class="cat" onclick="setCat('Ruimte')"><div class="icon">▦</div><b>Ruimte</b><small>Magazijn, atelier, kantoor, terrein, koelruimte of professionele keuken.</small></div><div class="cat" onclick="setCat('Machines & materiaal')"><div class="icon">⚙</div><b>Machines & materiaal</b><small>Productiemachines, horeca-uitrusting, heftrucks, gereedschap en rekken.</small></div><div class="cat" onclick="setCat('Voorraad & restpartijen')"><div class="icon">▣</div><b>Voorraad & restpartijen</b><small>Overstock, verpakking, grondstoffen, bouwmateriaal en winkelinrichting.</small></div><div class="cat" onclick="setCat('Vrije capaciteit')"><div class="icon">↗</div><b>Vrije capaciteit</b><small>Machine-uren, productie, transport, koeling en andere beschikbare capaciteit.</small></div></div></div></section>
@@ -141,11 +156,52 @@ function fakeSubmit(e,type){e.preventDefault();modalBody.innerHTML=`<div style="
 @media(max-width:700px){.account-grid{grid-template-columns:1fr}.profile-head{align-items:flex-start}}
 </style>
 
+
+<div class="modal" id="authModal" aria-hidden="true">
+  <div class="panel" style="max-width:520px">
+    <div class="panel-top"><strong>ONBENUT-account</strong><button class="close" type="button" onclick="closeAuth()">×</button></div>
+    <div class="panel-body">
+      <div class="auth-switch">
+        <button id="authLoginTab" class="active" type="button" onclick="showAuthMode('login')">Inloggen</button>
+        <button id="authRegisterTab" type="button" onclick="showAuthMode('register')">Registreren</button>
+      </div>
+
+      <form id="loginForm" class="auth-form" onsubmit="loginUser(event)">
+        <h2 style="margin:0 0 5px">Welkom terug</h2>
+        <p class="auth-note">Log in om je aanbod, zoekopdrachten en bedrijfsprofiel te beheren.</p>
+        <label>E-mailadres
+          <input id="loginEmail" type="email" autocomplete="email" required placeholder="naam@bedrijf.be">
+        </label>
+        <label>Wachtwoord
+          <input id="loginPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="Je wachtwoord">
+        </label>
+        <button class="btn primary" type="submit">Inloggen</button>
+      </form>
+
+      <form id="registerForm" class="auth-form" onsubmit="registerUser(event)" style="display:none">
+        <h2 style="margin:0 0 5px">Account aanmaken</h2>
+        <p class="auth-note">Na registratie ontvang je een bevestigingsmail. Klik daarin op de link voordat je voor het eerst inlogt.</p>
+        <label>E-mailadres
+          <input id="registerEmail" type="email" autocomplete="email" required placeholder="naam@bedrijf.be">
+        </label>
+        <label>Wachtwoord
+          <input id="registerPassword" type="password" autocomplete="new-password" required minlength="8" placeholder="Minstens 8 tekens">
+        </label>
+        <label>Herhaal wachtwoord
+          <input id="registerPassword2" type="password" autocomplete="new-password" required minlength="8" placeholder="Nogmaals je wachtwoord">
+        </label>
+        <button class="btn primary" type="submit">Gratis registreren</button>
+      </form>
+      <div id="authMessage" class="auth-message"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="accountModal" aria-hidden="true">
   <div class="panel account-panel-shell" style="max-width:900px">
     <div class="panel-top"><strong>Mijn ONBENUT</strong><button class="close" type="button" onclick="closeAccount()">×</button></div><div class="panel-body">
     <h2 style="margin-top:0">Mijn ONBENUT</h2>
-    <p style="color:var(--muted);margin-top:-5px">Beheer je aanbod, zoekopdrachten en bedrijfsprofiel.</p>
+    <p style="color:var(--muted);margin-top:-5px">Beheer je aanbod, zoekopdrachten en bedrijfsprofiel.</p><div class="auth-userbar"><span>Ingelogd als <strong id="accountEmail">—</strong></span><button class="btn outline" type="button" onclick="logoutUser()">Uitloggen</button></div>
     <div class="account-tabs">
       <button class="account-tab active" onclick="accountTab('ads',this)">Mijn aanbod</button>
       <button class="account-tab" onclick="accountTab('wanted',this)">Mijn zoekopdrachten</button>
@@ -200,13 +256,107 @@ function openPublicProfile(){closeAccount();const m=document.getElementById('pub
 function closePublicProfile(){const m=document.getElementById('publicProfileModal');m.classList.remove('open');m.setAttribute('aria-hidden','true')}
 </script>
 
-<!-- ONBENUT Supabase connection -->
+<!-- ONBENUT Supabase connection + authentication -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const ONBENUT_SUPABASE_URL = 'https://ighvnvqwcddmpcmiyifvx.supabase.co';
 const ONBENUT_SUPABASE_KEY = 'sb_publishable_4axowYUMzcxNnON-ydV7eQ_WAVr0lTo';
+const ONBENUT_SITE_URL = 'https://makemichielnicer.github.io/onbenut/';
 const onbenutSupabase = window.supabase.createClient(ONBENUT_SUPABASE_URL, ONBENUT_SUPABASE_KEY);
 window.onbenutSupabase = onbenutSupabase;
+
+let currentOnbenutUser = null;
+
+function openAuth(mode='login'){
+  showAuthMode(mode);
+  const m=document.getElementById('authModal');
+  m.classList.add('open'); m.setAttribute('aria-hidden','false');
+}
+function closeAuth(){
+  const m=document.getElementById('authModal');
+  m.classList.remove('open'); m.setAttribute('aria-hidden','true');
+}
+function showAuthMode(mode){
+  const login=mode==='login';
+  document.getElementById('loginForm').style.display=login?'grid':'none';
+  document.getElementById('registerForm').style.display=login?'none':'grid';
+  document.getElementById('authLoginTab').classList.toggle('active',login);
+  document.getElementById('authRegisterTab').classList.toggle('active',!login);
+  setAuthMessage('');
+}
+function setAuthMessage(message,type=''){
+  const box=document.getElementById('authMessage');
+  box.textContent=message;
+  box.className='auth-message'+(message?' show '+type:'');
+}
+function friendlyAuthError(message=''){
+  const m=message.toLowerCase();
+  if(m.includes('invalid login')) return 'E-mailadres of wachtwoord klopt niet.';
+  if(m.includes('email not confirmed')) return 'Bevestig eerst je e-mailadres via de mail van ONBENUT.';
+  if(m.includes('already registered') || m.includes('already been registered')) return 'Voor dit e-mailadres bestaat al een account.';
+  if(m.includes('password')) return 'Controleer je wachtwoord. Gebruik minstens 8 tekens.';
+  return message || 'Er ging iets mis. Probeer opnieuw.';
+}
+async function registerUser(event){
+  event.preventDefault();
+  const email=document.getElementById('registerEmail').value.trim();
+  const password=document.getElementById('registerPassword').value;
+  const password2=document.getElementById('registerPassword2').value;
+  if(password!==password2){ setAuthMessage('De twee wachtwoorden zijn niet hetzelfde.','err'); return; }
+  setAuthMessage('Account wordt aangemaakt…','ok');
+  const {data,error}=await onbenutSupabase.auth.signUp({
+    email,password,
+    options:{emailRedirectTo:ONBENUT_SITE_URL}
+  });
+  if(error){ setAuthMessage(friendlyAuthError(error.message),'err'); return; }
+  if(data.session){
+    setAuthMessage('Account aangemaakt. Je bent ingelogd.','ok');
+    await refreshAuthState(data.session);
+    setTimeout(()=>{closeAuth();openAccount();},700);
+  }else{
+    setAuthMessage('Gelukt! Check je mailbox en klik op de bevestigingslink. Daarna kun je inloggen.','ok');
+    document.getElementById('registerForm').reset();
+  }
+}
+async function loginUser(event){
+  event.preventDefault();
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  setAuthMessage('Even inloggen…','ok');
+  const {data,error}=await onbenutSupabase.auth.signInWithPassword({email,password});
+  if(error){ setAuthMessage(friendlyAuthError(error.message),'err'); return; }
+  await refreshAuthState(data.session);
+  document.getElementById('loginForm').reset();
+  closeAuth();
+  openAccount();
+}
+async function logoutUser(){
+  await onbenutSupabase.auth.signOut();
+  closeAccount();
+  await refreshAuthState(null);
+}
+async function refreshAuthState(session){
+  if(session===undefined){
+    const {data}=await onbenutSupabase.auth.getSession();
+    session=data.session;
+  }
+  currentOnbenutUser=session?.user || null;
+  const button=document.getElementById('accountButton');
+  const email=document.getElementById('accountEmail');
+  if(currentOnbenutUser){
+    button.textContent='Mijn ONBENUT';
+    if(email) email.textContent=currentOnbenutUser.email || 'ONBENUT-gebruiker';
+  }else{
+    button.textContent='Inloggen';
+    if(email) email.textContent='—';
+  }
+}
+function handleAccountButton(){
+  if(currentOnbenutUser) openAccount();
+  else openAuth('login');
+}
+onbenutSupabase.auth.onAuthStateChange((_event,session)=>refreshAuthState(session));
+refreshAuthState();
 </script>
 
 </body></html>
