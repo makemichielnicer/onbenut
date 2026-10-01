@@ -504,12 +504,75 @@ async function loadMyListings(){
   const {data,error}=await onbenutSupabase.from('listings').select('*').eq('owner_id',currentOnbenutUser.id).order('created_at',{ascending:false});
   if(error){grid.innerHTML=`<article class="account-card"><p>Kon je aanbod niet laden: ${error.message}</p></article>`;return;}
   if(!data?.length){grid.innerHTML='<article class="account-card"><h4>Nog geen aanbod</h4><p>Plaats je eerste echte advertentie via “Gratis aanbieden”.</p></article>';return;}
-  grid.innerHTML=data.map(x=>`<article class="account-card">${x.image_url?`<img src="${x.image_url}" alt="${x.title}" style="width:100%;height:150px;object-fit:cover;border-radius:12px;margin-bottom:12px">`:''}<small>${x.category} · ${x.region||'Geen regio'}</small><h4>${x.title}</h4><p>${listingPriceText(x)} · ${x.transaction_type}</p><div class="profile-actions"><button class="btn secondary" type="button" onclick="alert('Aanpassen bouwen we als volgende functie.')">Aanpassen</button><button class="btn secondary" type="button" onclick='deleteListing(${JSON.stringify(x.id)})'>Verwijderen</button></div></article>`).join('');
+  grid.innerHTML=data.map(x=>`<article class="account-card">${x.image_url?`<img src="${x.image_url}" alt="${x.title}" style="width:100%;height:150px;object-fit:cover;border-radius:12px;margin-bottom:12px">`:''}<small>${x.category} · ${x.region||'Geen regio'}</small><h4>${x.title}</h4><p>${listingPriceText(x)} · ${x.transaction_type}</p><div class="profile-actions"><button class="btn secondary" type="button" onclick='editListing(${JSON.stringify(x.id)})'>Aanpassen</button><button class="btn secondary" type="button" onclick='deleteListing(${JSON.stringify(x.id)})'>Verwijderen</button></div></article>`).join('');
+}
+function storagePathFromPublicUrl(url){
+  if(!url) return null;
+  const marker='/storage/v1/object/public/listing-images/';
+  const i=url.indexOf(marker);
+  return i>=0 ? decodeURIComponent(url.slice(i+marker.length)) : null;
+}
+async function editListing(id){
+  if(!currentOnbenutUser){openAuth('login');return;}
+  const {data:x,error}=await onbenutSupabase.from('listings').select('*').eq('id',id).eq('owner_id',currentOnbenutUser.id).single();
+  if(error||!x){alert('Advertentie laden is niet gelukt: '+(error?.message||'Niet gevonden'));return;}
+  const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  show('Advertentie aanpassen',`<form id="editListingForm" onsubmit="saveListingEdit(event,'${x.id}')">
+    <div class="notice" style="margin-bottom:18px">Wijzig je advertentie. Kies alleen een nieuwe foto als je de huidige wilt vervangen.</div>
+    ${x.image_url?`<img src="${esc(x.image_url)}" alt="Huidige foto" style="width:100%;max-height:260px;object-fit:cover;border-radius:16px;margin-bottom:16px">`:''}
+    <div class="offer-label">Categorie</div><select id="editCategory" class="field" style="width:100%"><option>Ruimte</option><option>Machines & materiaal</option><option>Voorraad & restpartijen</option><option>Vrije capaciteit</option></select>
+    <div class="offer-label">Titel <span class="required">*</span></div><input id="editTitle" class="field" required value="${esc(x.title)}">
+    <div class="two"><div><div class="offer-label">Aanbodtype</div><select id="editType" class="field" style="width:100%"><option>Te koop</option><option>Te huur</option><option>Capaciteit beschikbaar</option><option>In overleg</option></select></div><div><div class="offer-label">Prijs / tarief</div><input id="editPrice" class="field" style="width:100%" value="${esc(x.price==null?(x.price_unit||''):String(x.price)+(x.price_unit?' '+x.price_unit:''))}"></div></div>
+    <div class="offer-label">Plaats of regio <span class="required">*</span></div><input id="editPlace" class="field" required value="${esc(x.region||'')}">
+    <div class="offer-label">Beschrijving <span class="required">*</span></div><textarea id="editDesc" class="field" required>${esc(x.description||'')}</textarea>
+    <div class="offer-label">Nieuwe foto (optioneel)</div><input id="editPhoto" class="field" type="file" accept="image/jpeg,image/png,image/webp">
+    <div class="profile-actions" style="justify-content:flex-end;margin-top:22px"><button type="button" class="btn outline" onclick="closeModal()">Annuleren</button><button type="submit" class="btn primary">Wijzigingen opslaan</button></div>
+  </form>`);
+  document.getElementById('editCategory').value=x.category||'Ruimte';
+  document.getElementById('editType').value=x.transaction_type||'Te koop';
+}
+async function uploadEditImage(file){
+  if(!file) return null;
+  if(file.size>5*1024*1024) throw new Error('De foto is groter dan 5 MB.');
+  const allowed=['image/jpeg','image/png','image/webp'];
+  if(!allowed.includes(file.type)) throw new Error('Gebruik een JPG, PNG of WEBP-afbeelding.');
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const path=`${currentOnbenutUser.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+  const {error}=await onbenutSupabase.storage.from('listing-images').upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});
+  if(error) throw error;
+  const {data}=onbenutSupabase.storage.from('listing-images').getPublicUrl(path);
+  return {url:data.publicUrl,path};
+}
+async function saveListingEdit(event,id){
+  event.preventDefault();
+  const btn=event.submitter; if(btn){btn.disabled=true;btn.textContent='Opslaan…';}
+  const parsed=parseOfferPrice(document.getElementById('editPrice').value);
+  const payload={
+    category:document.getElementById('editCategory').value,
+    title:document.getElementById('editTitle').value.trim(),
+    transaction_type:document.getElementById('editType').value,
+    price:parsed.price, price_unit:parsed.unit,
+    region:document.getElementById('editPlace').value.trim(),
+    description:document.getElementById('editDesc').value.trim(),
+    updated_at:new Date().toISOString()
+  };
+  const {data:old,error:oldErr}=await onbenutSupabase.from('listings').select('image_url').eq('id',id).eq('owner_id',currentOnbenutUser.id).single();
+  if(oldErr){alert('Opslaan is niet gelukt: '+oldErr.message); if(btn){btn.disabled=false;btn.textContent='Wijzigingen opslaan';} return;}
+  let uploaded=null;
+  try{ uploaded=await uploadEditImage(document.getElementById('editPhoto').files?.[0]); if(uploaded) payload.image_url=uploaded.url; }
+  catch(err){alert('Nieuwe foto uploaden is niet gelukt: '+err.message); if(btn){btn.disabled=false;btn.textContent='Wijzigingen opslaan';} return;}
+  const {error}=await onbenutSupabase.from('listings').update(payload).eq('id',id).eq('owner_id',currentOnbenutUser.id);
+  if(error){ if(uploaded?.path) await onbenutSupabase.storage.from('listing-images').remove([uploaded.path]); alert('Opslaan is niet gelukt: '+error.message); if(btn){btn.disabled=false;btn.textContent='Wijzigingen opslaan';} return; }
+  if(uploaded && old?.image_url){const oldPath=storagePathFromPublicUrl(old.image_url); if(oldPath) await onbenutSupabase.storage.from('listing-images').remove([oldPath]);}
+  closeModal(); await loadMyListings(); await loadPublicListings(); openAccount();
 }
 async function deleteListing(id){
   if(!confirm('Deze advertentie verwijderen?'))return;
-  const {error}=await onbenutSupabase.from('listings').delete().eq('id',id);
+  const {data:x,error:readError}=await onbenutSupabase.from('listings').select('image_url').eq('id',id).eq('owner_id',currentOnbenutUser.id).single();
+  if(readError){alert('Verwijderen is niet gelukt: '+readError.message);return;}
+  const {error}=await onbenutSupabase.from('listings').delete().eq('id',id).eq('owner_id',currentOnbenutUser.id);
   if(error){alert('Verwijderen is niet gelukt: '+error.message);return;}
+  const path=storagePathFromPublicUrl(x?.image_url); if(path) await onbenutSupabase.storage.from('listing-images').remove([path]);
   await loadMyListings(); await loadPublicListings();
 }
 
