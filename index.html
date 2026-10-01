@@ -125,11 +125,11 @@ function safeText(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&l
 function detail(id){
   let x=DATA.find(a=>a.id===id); if(!x)return;
   const seller=x.real?(x.company_name||'ONBENUT-aanbieder'):'Kempen Metaal BV';
-  const sellerSub=x.real?'Aanbieder op ONBENUT':'Voorbeeld aanbieder';
+  const sellerSub=x.real?'Bedrijf op ONBENUT':'Voorbeeld aanbieder';
   const contact=x.real&&x.contact_email
     ? `<a class="btn primary" style="width:100%;text-align:center;display:block" href="mailto:${encodeURIComponent(x.contact_email)}?subject=${encodeURIComponent('Reactie via ONBENUT: '+x.title)}">Contacteer aanbieder</a>`
     : `<button class="btn primary" style="width:100%" onclick="contactDemo()">Neem contact op</button>`;
-  show(x.title,`<div class="detail-img" style="background-image:url('${safeText(x.img)}')"></div><div class="detail-grid"><div><span class="badge" style="position:static;display:inline-block">${safeText(x.cat)}</span><h2 style="margin-top:15px">${safeText(x.title)}</h2><p class="loc">⌖ ${safeText(x.loc)}</p><div class="price" style="font-size:27px">${safeText(x.price)}</div>${x.transaction_type?`<p><b>Aanbodtype:</b> ${safeText(x.transaction_type)}</p>`:''}<p style="line-height:1.6;white-space:pre-wrap">${safeText(x.desc)}</p>${x.real?'':'<div class="notice">Dit is demo-inhoud. Er wordt nog niets echt verkocht of verhuurd via deze prototypeversie.</div>'}</div><aside class="seller"><b>${safeText(seller)}</b><p class="loc">${safeText(sellerSub)}</p><hr style="border:0;border-top:1px solid var(--line)">${contact}<button class="btn outline" style="width:100%;margin-top:8px">♡ Bewaar</button></aside></div>`)
+  show(x.title,`<div class="detail-img" style="background-image:url('${safeText(x.img)}')"></div><div class="detail-grid"><div><span class="badge" style="position:static;display:inline-block">${safeText(x.cat)}</span><h2 style="margin-top:15px">${safeText(x.title)}</h2><p class="loc">⌖ ${safeText(x.loc)}</p><div class="price" style="font-size:27px">${safeText(x.price)}</div>${x.transaction_type?`<p><b>Aanbodtype:</b> ${safeText(x.transaction_type)}</p>`:''}<p style="line-height:1.6;white-space:pre-wrap">${safeText(x.desc)}</p>${x.real?'':'<div class="notice">Dit is demo-inhoud. Er wordt nog niets echt verkocht of verhuurd via deze prototypeversie.</div>'}</div><aside class="seller"><b>${safeText(seller)}</b><p class="loc">${safeText(sellerSub)}</p><hr style="border:0;border-top:1px solid var(--line)">${x.real&&x.company_id?`<button class="btn outline" style="width:100%;margin-bottom:8px" onclick="closeModal();openPublicProfile('${x.company_id}')">Bekijk bedrijfsprofiel</button>`:''}${contact}<button class="btn outline" style="width:100%;margin-top:8px">♡ Bewaar</button></aside></div>`)
 }
 function contactDemo(){alert('Dit is een demo-advertentie. Echte advertenties gebruiken het contactadres van de aanbieder.')}
 function openOffer(){show('Gratis aanbieden',`<form id="offerForm" onsubmit="submitRealOffer(event)"><div class="offer-progress"><span class="on"></span><span></span><span></span><span></span></div><div class="notice" style="margin-bottom:18px">Je advertentie wordt gekoppeld aan je ONBENUT-account en online opgeslagen. Foto’s worden veilig opgeslagen en blijven bij je advertentie staan.</div>
@@ -247,15 +247,16 @@ function fakeSubmit(e,type){e.preventDefault();modalBody.innerHTML=`<div style="
       </div>
     </section>
     <section class="account-panel" id="acc-profile">
-      <div class="profile-head"><div class="profile-logo">VB</div><div><h3 style="margin:0">Voorbeeldbedrijf BV</h3><p style="margin:5px 0;color:var(--muted)">Turnhout · Actief op ONBENUT</p></div></div>
+      <div class="profile-head"><div class="profile-logo" id="companyLogo">ON</div><div><h3 id="companyProfileHeading" style="margin:0">Jouw bedrijf</h3><p id="companyProfileSub" style="margin:5px 0;color:var(--muted)">Maak je bedrijfsprofiel compleet</p></div></div>
       <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-        <label>Bedrijfsnaam<input value="Voorbeeldbedrijf BV"></label>
-        <label>Regio<input value="Turnhout"></label>
-        <label style="grid-column:1/-1">Over het bedrijf<textarea rows="4">Wij bieden regelmatig materiaal en ongebruikte capaciteit aan.</textarea></label>
-        <label>Website<input placeholder="www.jouwbedrijf.be"></label>
-        <label>Contact e-mail<input value="info@voorbeeldbedrijf.be"></label>
+        <label>Bedrijfsnaam<input id="companyName" placeholder="Naam van je bedrijf"></label>
+        <label>Regio<input id="companyRegion" placeholder="bv. Turnhout"></label>
+        <label style="grid-column:1/-1">Over het bedrijf<textarea id="companyDescription" rows="4" placeholder="Vertel kort wat je bedrijf doet."></textarea></label>
+        <label>Website<input id="companyWebsite" placeholder="www.jouwbedrijf.be"></label>
+        <label>Contact e-mail<input id="companyEmail" type="email" placeholder="info@jouwbedrijf.be"></label>
       </div>
-      <div class="profile-actions"><button class="btn primary" type="button" onclick="alert('Profiel opgeslagen — demo')">Profiel opslaan</button><button class="btn secondary" type="button" onclick="openPublicProfile()">Bekijk openbaar profiel</button></div>
+      <div id="companyProfileMessage" style="margin-top:12px;color:var(--muted)"></div>
+      <div class="profile-actions"><button class="btn primary" type="button" onclick="saveCompanyProfile()">Profiel opslaan</button><button class="btn secondary" type="button" onclick="openPublicProfile()">Bekijk openbaar profiel</button></div>
     </section>
     </div>
   </div>
@@ -264,23 +265,16 @@ function fakeSubmit(e,type){e.preventDefault();modalBody.innerHTML=`<div style="
 <div class="modal" id="publicProfileModal" aria-hidden="true">
   <div class="panel account-panel-shell" style="max-width:900px">
     <div class="panel-top"><strong>Bedrijfsprofiel</strong><button class="close" type="button" onclick="closePublicProfile()">×</button></div><div class="panel-body">
-    <div class="profile-head"><div class="profile-logo">VB</div><div><h2 style="margin:0">Voorbeeldbedrijf BV</h2><p style="margin:6px 0;color:var(--muted)">Turnhout · Actief op ONBENUT</p></div></div>
-    <p>Wij bieden regelmatig materiaal en ongebruikte capaciteit aan. Bekijk hieronder wat momenteel beschikbaar is.</p>
-    <div class="profile-actions"><button class="btn primary" type="button" onclick="alert('Contactfunctie — demo')">Contact opnemen</button></div>
-    <h3 style="margin-top:28px">Aanbod van dit bedrijf</h3>
-    <div class="account-grid">
-      <article class="account-card"><small>Machines & materiaal</small><h4>RVS werktafel 180 cm</h4><p>€ 325 · Turnhout</p></article>
-      <article class="account-card"><small>Ruimte</small><h4>Opslagruimte 120 m²</h4><p>€ 650 / maand · Oud-Turnhout</p></article>
-    </div>
+    <div id="publicCompanyContent"><p>Bedrijfsprofiel wordt geladen…</p></div>
     </div>
   </div>
 </div>
 
 <script>
-function openAccount(){if(!currentOnbenutUser){openAuth('login');return}const m=document.getElementById('accountModal');m.classList.add('open');m.setAttribute('aria-hidden','false');loadMyListings()}
+function openAccount(){if(!currentOnbenutUser){openAuth('login');return}const m=document.getElementById('accountModal');m.classList.add('open');m.setAttribute('aria-hidden','false');loadMyListings();loadCompanyProfile()}
 function closeAccount(){const m=document.getElementById('accountModal');m.classList.remove('open');m.setAttribute('aria-hidden','true')}
-function accountTab(name,btn){document.querySelectorAll('.account-panel').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.account-tab').forEach(x=>x.classList.remove('active'));document.getElementById('acc-'+name).classList.add('active');btn.classList.add('active')}
-function openPublicProfile(){closeAccount();const m=document.getElementById('publicProfileModal');m.classList.add('open');m.setAttribute('aria-hidden','false')}
+function accountTab(name,btn){document.querySelectorAll('.account-panel').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.account-tab').forEach(x=>x.classList.remove('active'));document.getElementById('acc-'+name).classList.add('active');btn.classList.add('active');if(name==='profile')loadCompanyProfile()}
+async function openPublicProfile(companyId){closeAccount();const m=document.getElementById('publicProfileModal');m.classList.add('open');m.setAttribute('aria-hidden','false');await loadPublicCompanyProfile(companyId)}
 function closePublicProfile(){const m=document.getElementById('publicProfileModal');m.classList.remove('open');m.setAttribute('aria-hidden','true')}
 </script>
 
@@ -428,6 +422,52 @@ function handleAccountButton(){
   else openAuth('login');
 }
 
+function companyInitials(name){return (name||'ON').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'ON'}
+async function getMyCompany(){
+  if(!currentOnbenutUser) return null;
+  const {data,error}=await onbenutSupabase.from('companies').select('*').eq('owner_id',currentOnbenutUser.id).maybeSingle();
+  if(error){console.warn('ONBENUT company:',error.message);return null} return data;
+}
+async function loadCompanyProfile(){
+  if(!currentOnbenutUser)return;
+  const msg=document.getElementById('companyProfileMessage'); if(msg)msg.textContent='Profiel wordt geladen…';
+  const c=await getMyCompany();
+  document.getElementById('companyName').value=c?.name||'';
+  document.getElementById('companyRegion').value=c?.region||'';
+  document.getElementById('companyDescription').value=c?.description||'';
+  document.getElementById('companyWebsite').value=c?.website||'';
+  document.getElementById('companyEmail').value=c?.contact_email||currentOnbenutUser.email||'';
+  const name=c?.name||'Jouw bedrijf'; document.getElementById('companyProfileHeading').textContent=name;
+  document.getElementById('companyProfileSub').textContent=c?`${c.region||'België'} · Actief op ONBENUT`:'Maak je bedrijfsprofiel compleet';
+  document.getElementById('companyLogo').textContent=companyInitials(name); if(msg)msg.textContent='';
+}
+async function saveCompanyProfile(){
+  if(!currentOnbenutUser){openAuth('login');return}
+  const name=document.getElementById('companyName').value.trim(), region=document.getElementById('companyRegion').value.trim(), description=document.getElementById('companyDescription').value.trim(), website=document.getElementById('companyWebsite').value.trim(), contact_email=document.getElementById('companyEmail').value.trim();
+  if(!name){alert('Vul eerst je bedrijfsnaam in.');return} if(contact_email&&!document.getElementById('companyEmail').checkValidity()){document.getElementById('companyEmail').reportValidity();return}
+  const {data,error}=await onbenutSupabase.from('companies').upsert({owner_id:currentOnbenutUser.id,name,region,description,website,contact_email},{onConflict:'owner_id'}).select().single();
+  if(error){alert('Profiel opslaan is niet gelukt: '+error.message);return}
+  document.getElementById('companyProfileMessage').textContent='✓ Profiel opgeslagen';
+  document.getElementById('companyProfileHeading').textContent=data.name; document.getElementById('companyProfileSub').textContent=`${data.region||'België'} · Actief op ONBENUT`; document.getElementById('companyLogo').textContent=companyInitials(data.name);
+  // Koppel bestaande advertenties aan dit bedrijf en vul ontbrekende publieke bedrijfsgegevens aan.
+  await onbenutSupabase.from('listings').update({company_id:data.id,company_name:data.name,contact_email:data.contact_email||null}).eq('owner_id',currentOnbenutUser.id);
+  await loadMyListings(); await loadPublicListings();
+}
+async function ensureMyCompany(){
+  let c=await getMyCompany(); if(c)return c;
+  const name=(document.getElementById('offerCompany')?.value||'').trim(); const contact_email=(document.getElementById('offerEmail')?.value||currentOnbenutUser?.email||'').trim();
+  if(!name) throw new Error('Vul eerst je bedrijfsnaam in.');
+  const {data,error}=await onbenutSupabase.from('companies').insert({owner_id:currentOnbenutUser.id,name,contact_email}).select().single(); if(error)throw error; return data;
+}
+async function loadPublicCompanyProfile(companyId){
+  const box=document.getElementById('publicCompanyContent'); box.innerHTML='<p>Bedrijfsprofiel wordt geladen…</p>';
+  let c=null; if(companyId){const r=await onbenutSupabase.from('companies').select('*').eq('id',companyId).maybeSingle();c=r.data}else c=await getMyCompany();
+  if(!c){box.innerHTML='<h2>Nog geen bedrijfsprofiel</h2><p>Dit bedrijf heeft nog geen openbaar profiel ingevuld.</p>';return}
+  const {data:listings}=await onbenutSupabase.from('listings').select('*').eq('company_id',c.id).eq('status','active').order('created_at',{ascending:false});
+  const site=c.website?(/^https?:\/\//i.test(c.website)?c.website:'https://'+c.website):'';
+  const contact=c.contact_email?`<a class="btn primary" href="mailto:${encodeURIComponent(c.contact_email)}">Contact opnemen</a>`:'';
+  box.innerHTML=`<div class="profile-head"><div class="profile-logo">${safeText(companyInitials(c.name))}</div><div><h2 style="margin:0">${safeText(c.name)}</h2><p style="margin:6px 0;color:var(--muted)">${safeText(c.region||'België')} · Actief op ONBENUT</p></div></div><p style="line-height:1.6">${safeText(c.description||'Dit bedrijf is actief op ONBENUT.')}</p><div class="profile-actions">${contact}${site?`<a class="btn outline" href="${safeText(site)}" target="_blank" rel="noopener">Website bekijken</a>`:''}</div><h3 style="margin-top:28px">Aanbod van dit bedrijf</h3><div class="account-grid">${(listings||[]).length?(listings||[]).map(x=>`<article class="account-card"><small>${safeText(x.category)} · ${safeText(x.region||'')}</small><h4>${safeText(x.title)}</h4><p>${safeText(listingPriceText(x))}</p><button class="btn secondary" onclick="closePublicProfile();detail('${x.id}')">Bekijk advertentie</button></article>`).join(''):'<article class="account-card"><p>Momenteel geen actief aanbod.</p></article>'}</div>`;
+}
 function parseOfferPrice(raw){
   const text=(raw||'').trim();
   if(!text) return {price:null,unit:null};
@@ -469,8 +509,10 @@ async function submitRealOffer(event){
   if(button){button.disabled=true;button.textContent='Plaatsen…';}
   const rawPrice=document.getElementById('offerPrice').value;
   const parsed=parseOfferPrice(rawPrice);
+  let company; try{company=await ensureMyCompany()}catch(err){if(button){button.disabled=false;button.textContent='Gratis plaatsen';}alert('Bedrijfsprofiel koppelen is niet gelukt: '+err.message);return}
   const payload={
     owner_id:currentOnbenutUser.id,
+    company_id:company.id,
     title:document.getElementById('offerTitle').value.trim(),
     category:document.getElementById('offerCategory').value,
     transaction_type:document.getElementById('offerType').value,
@@ -504,7 +546,7 @@ async function loadPublicListings(){
   if(error){console.warn('ONBENUT listings:',error.message);return;}
   // Houd demo-aanbod voorlopig als vulling, maar voeg echte advertenties bovenaan toe.
   const demo=DATA.filter(x=>!x.real);
-  const real=(data||[]).map(x=>({id:x.id,cat:x.category,title:x.title,loc:x.region||'',price:listingPriceText(x),img:x.image_url||placeholderForCategory(x.category),desc:x.description||'',real:true,transaction_type:x.transaction_type,company_name:x.company_name||'',contact_email:x.contact_email||''}));
+  const real=(data||[]).map(x=>({id:x.id,cat:x.category,title:x.title,loc:x.region||'',price:listingPriceText(x),img:x.image_url||placeholderForCategory(x.category),desc:x.description||'',real:true,transaction_type:x.transaction_type,company_id:x.company_id||null,company_name:x.company_name||'',contact_email:x.contact_email||''}));
   DATA.splice(0,DATA.length,...real,...demo);
   marketFilter();
 }
