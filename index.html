@@ -121,9 +121,18 @@ function marketReset(){['aq','aplace'].forEach(id=>document.getElementById(id).v
 function filterListings(){let q=document.getElementById('q').value,c=document.getElementById('cat').value,p=document.getElementById('place').value;document.getElementById('aq').value=q;document.getElementById('acat').value=c;document.getElementById('aplace').value=p;marketFilter();location.hash='aanbod'}
 function setCat(c){document.getElementById('acat').value=c;marketFilter();location.hash='aanbod'}function resetFilters(){marketReset();location.hash='aanbod'}
 function show(title,body){modalTitle.textContent=title;modalBody.innerHTML=body;modal.classList.add('open');document.body.style.overflow='hidden'}function closeModal(){modal.classList.remove('open');document.body.style.overflow=''}function backdrop(e){if(e.target===modal)closeModal()}
-function detail(id){let x=DATA.find(a=>a.id===id);show(x.title,`<div class="detail-img" style="background-image:url('${x.img}')"></div><div class="detail-grid"><div><span class="badge" style="position:static;display:inline-block">${x.cat}</span><h2 style="margin-top:15px">${x.title}</h2><p class="loc">⌖ ${x.loc}</p><div class="price" style="font-size:27px">${x.price}</div><p style="line-height:1.6">${x.desc}</p>${x.real?'':'<div class="notice">Dit is demo-inhoud. Er wordt nog niets echt verkocht of verhuurd via deze prototypeversie.</div>'}</div><aside class="seller"><b>Kempen Metaal BV</b><p class="loc">Voorbeeld aanbieder</p><hr style="border:0;border-top:1px solid var(--line)"><button class="btn primary" style="width:100%" onclick="contactDemo()">Neem contact op</button><button class="btn outline" style="width:100%;margin-top:8px">♡ Bewaar</button></aside></div>`)}
-function contactDemo(){alert('In de volgende fase koppelen we dit aan echte accounts en berichten.')}
-function openOffer(){show('Gratis aanbieden',`<form id="offerForm" onsubmit="submitRealOffer(event)"><div class="offer-progress"><span class="on"></span><span></span><span></span><span></span></div><div class="notice" style="margin-bottom:18px">Je advertentie wordt gekoppeld aan je ONBENUT-account en online opgeslagen. Foto-opslag voegen we in de volgende stap toe.</div>
+function safeText(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function detail(id){
+  let x=DATA.find(a=>a.id===id); if(!x)return;
+  const seller=x.real?(x.company_name||'ONBENUT-aanbieder'):'Kempen Metaal BV';
+  const sellerSub=x.real?'Aanbieder op ONBENUT':'Voorbeeld aanbieder';
+  const contact=x.real&&x.contact_email
+    ? `<a class="btn primary" style="width:100%;text-align:center;display:block" href="mailto:${encodeURIComponent(x.contact_email)}?subject=${encodeURIComponent('Reactie via ONBENUT: '+x.title)}">Contacteer aanbieder</a>`
+    : `<button class="btn primary" style="width:100%" onclick="contactDemo()">Neem contact op</button>`;
+  show(x.title,`<div class="detail-img" style="background-image:url('${safeText(x.img)}')"></div><div class="detail-grid"><div><span class="badge" style="position:static;display:inline-block">${safeText(x.cat)}</span><h2 style="margin-top:15px">${safeText(x.title)}</h2><p class="loc">⌖ ${safeText(x.loc)}</p><div class="price" style="font-size:27px">${safeText(x.price)}</div>${x.transaction_type?`<p><b>Aanbodtype:</b> ${safeText(x.transaction_type)}</p>`:''}<p style="line-height:1.6;white-space:pre-wrap">${safeText(x.desc)}</p>${x.real?'':'<div class="notice">Dit is demo-inhoud. Er wordt nog niets echt verkocht of verhuurd via deze prototypeversie.</div>'}</div><aside class="seller"><b>${safeText(seller)}</b><p class="loc">${safeText(sellerSub)}</p><hr style="border:0;border-top:1px solid var(--line)">${contact}<button class="btn outline" style="width:100%;margin-top:8px">♡ Bewaar</button></aside></div>`)
+}
+function contactDemo(){alert('Dit is een demo-advertentie. Echte advertenties gebruiken het contactadres van de aanbieder.')}
+function openOffer(){show('Gratis aanbieden',`<form id="offerForm" onsubmit="submitRealOffer(event)"><div class="offer-progress"><span class="on"></span><span></span><span></span><span></span></div><div class="notice" style="margin-bottom:18px">Je advertentie wordt gekoppeld aan je ONBENUT-account en online opgeslagen. Foto’s worden veilig opgeslagen en blijven bij je advertentie staan.</div>
 <div class="offer-step on" data-step="0"><h2>Wat wil je aanbieden?</h2><p>Kies de categorie die het beste past.</p><input type="hidden" id="offerCategory" required><div class="choice-grid"><button type="button" class="choice" onclick="pickOffer(this,'Ruimte')">🏢 Ruimte<small>Magazijn, kantoor, terrein, keuken…</small></button><button type="button" class="choice" onclick="pickOffer(this,'Machines & materiaal')">⚙️ Machines & materiaal<small>Machines, rekken, heftrucks, gereedschap…</small></button><button type="button" class="choice" onclick="pickOffer(this,'Voorraad & restpartijen')">📦 Voorraad & restpartijen<small>Overstock, grondstoffen, verpakkingen…</small></button><button type="button" class="choice" onclick="pickOffer(this,'Vrije capaciteit')">↗️ Vrije capaciteit<small>Productie-uren, transport, koeling…</small></button></div><div class="offer-nav"><span></span><button type="button" class="btn primary" onclick="offerNext()">Volgende →</button></div></div>
 <div class="offer-step" data-step="1"><h2>Vertel wat je hebt.</h2><p>Hou het duidelijk. Bedrijven willen snel weten wat er beschikbaar is.</p><div class="offer-label">Titel <span class="required">*</span></div><input id="offerTitle" class="field" required placeholder="bv. Opslagruimte 180 m² in Turnhout"><div class="two"><div><div class="offer-label">Aanbodtype</div><select id="offerType" class="field" style="width:100%"><option>Te koop</option><option>Te huur</option><option>Capaciteit beschikbaar</option><option>In overleg</option></select></div><div><div class="offer-label">Prijs / tarief</div><input id="offerPrice" class="field" style="width:100%" placeholder="bv. € 450 / maand"></div></div><div class="offer-label">Plaats of regio <span class="required">*</span></div><input id="offerPlace" class="field" required placeholder="bv. Turnhout"><div class="offer-label">Beschrijving <span class="required">*</span></div><textarea id="offerDesc" class="field" required placeholder="Wat bied je aan? Vermeld afmetingen, staat, hoeveelheid, beschikbaarheid en voorwaarden."></textarea><div class="offer-nav"><button type="button" class="btn outline" onclick="offerPrev()">← Terug</button><button type="button" class="btn primary" onclick="offerNext()">Volgende →</button></div></div>
 <div class="offer-step" data-step="2"><h2>Voeg foto's toe.</h2><p>Goede foto's maken je aanbod veel duidelijker.</p><label class="uploadbox" style="display:block"><div style="font-size:36px">📷</div><b>Kies foto's van je aanbod</b><div style="color:var(--muted);font-size:13px;margin-top:5px">JPG, PNG of WEBP · meerdere foto's mogelijk</div><input id="offerPhotos" type="file" accept="image/*" multiple style="margin-top:14px" onchange="previewOfferPhotos(this)"></label><div id="offerPreviews" class="previews"></div><div class="offer-label" style="margin-top:20px">Bedrijfsnaam <span class="required">*</span></div><input id="offerCompany" class="field" required placeholder="Naam van je bedrijf"><div class="offer-label">E-mailadres <span class="required">*</span></div><input id="offerEmail" class="field" type="email" required placeholder="naam@bedrijf.be"><div class="offer-nav"><button type="button" class="btn outline" onclick="offerPrev()">← Terug</button><button type="button" class="btn primary" onclick="offerNext()">Bekijk advertentie →</button></div></div>
@@ -469,6 +478,8 @@ async function submitRealOffer(event){
     price_unit:parsed.unit,
     region:document.getElementById('offerPlace').value.trim(),
     description:document.getElementById('offerDesc').value.trim(),
+    company_name:document.getElementById('offerCompany').value.trim(),
+    contact_email:document.getElementById('offerEmail').value.trim(),
     status:'active'
   };
   let uploaded=null;
@@ -493,7 +504,7 @@ async function loadPublicListings(){
   if(error){console.warn('ONBENUT listings:',error.message);return;}
   // Houd demo-aanbod voorlopig als vulling, maar voeg echte advertenties bovenaan toe.
   const demo=DATA.filter(x=>!x.real);
-  const real=(data||[]).map(x=>({id:x.id,cat:x.category,title:x.title,loc:x.region||'',price:listingPriceText(x),img:x.image_url||placeholderForCategory(x.category),desc:x.description||'',real:true,transaction_type:x.transaction_type}));
+  const real=(data||[]).map(x=>({id:x.id,cat:x.category,title:x.title,loc:x.region||'',price:listingPriceText(x),img:x.image_url||placeholderForCategory(x.category),desc:x.description||'',real:true,transaction_type:x.transaction_type,company_name:x.company_name||'',contact_email:x.contact_email||''}));
   DATA.splice(0,DATA.length,...real,...demo);
   marketFilter();
 }
@@ -526,6 +537,7 @@ async function editListing(id){
     <div class="two"><div><div class="offer-label">Aanbodtype</div><select id="editType" class="field" style="width:100%"><option>Te koop</option><option>Te huur</option><option>Capaciteit beschikbaar</option><option>In overleg</option></select></div><div><div class="offer-label">Prijs / tarief</div><input id="editPrice" class="field" style="width:100%" value="${esc(x.price==null?(x.price_unit||''):String(x.price)+(x.price_unit?' '+x.price_unit:''))}"></div></div>
     <div class="offer-label">Plaats of regio <span class="required">*</span></div><input id="editPlace" class="field" required value="${esc(x.region||'')}">
     <div class="offer-label">Beschrijving <span class="required">*</span></div><textarea id="editDesc" class="field" required>${esc(x.description||'')}</textarea>
+    <div class="two"><div><div class="offer-label">Bedrijfsnaam <span class="required">*</span></div><input id="editCompany" class="field" style="width:100%" required value="${esc(x.company_name||'')}"></div><div><div class="offer-label">Contact e-mail <span class="required">*</span></div><input id="editEmail" type="email" class="field" style="width:100%" required value="${esc(x.contact_email||'')}"></div></div>
     <div class="offer-label">Nieuwe foto (optioneel)</div><input id="editPhoto" class="field" type="file" accept="image/jpeg,image/png,image/webp">
     <div class="profile-actions" style="justify-content:flex-end;margin-top:22px"><button type="button" class="btn outline" onclick="closeModal()">Annuleren</button><button type="submit" class="btn primary">Wijzigingen opslaan</button></div>
   </form>`);
@@ -555,6 +567,8 @@ async function saveListingEdit(event,id){
     price:parsed.price, price_unit:parsed.unit,
     region:document.getElementById('editPlace').value.trim(),
     description:document.getElementById('editDesc').value.trim(),
+    company_name:document.getElementById('editCompany').value.trim(),
+    contact_email:document.getElementById('editEmail').value.trim(),
     updated_at:new Date().toISOString()
   };
   const {data:old,error:oldErr}=await onbenutSupabase.from('listings').select('image_url').eq('id',id).eq('owner_id',currentOnbenutUser.id).single();
